@@ -44,16 +44,19 @@ class MarioBrosTrainer:
         pbar = tqdm(range(self.config.n_episodes))
         for episode in pbar:
             state = self.env.reset()
-            done = False
+            max_x_pos = 0
             for _ in range(self.config.max_episode_length):
                 state = torch.tensor(state.copy()).float().cuda().unsqueeze(0)
                 distribution = Categorical(self.model(state))  # todo set seed
                 action = distribution.sample()
-                state, reward, done, _ = self.env.step(action.item())
+                state, reward, done, info = self.env.step(action.item())
                 self.episode_actions = torch.cat(
                     [self.episode_actions, distribution.log_prob(action).reshape(1)]
                 )
                 self.episode_rewards.append(reward)
+
+                if info["x_pos"] > max_x_pos:
+                    max_x_pos = info["x_pos"]
 
                 if done:
                     break
@@ -61,7 +64,13 @@ class MarioBrosTrainer:
             loss = self.backward()
             pbar.set_description(f"Loss: {loss:.04f}")
             if self.config.log_to_wandb:
-                wandb.log({"reward": np.sum(self.episode_rewards), "loss": loss})
+                wandb.log(
+                    {
+                        "reward": np.sum(self.episode_rewards),
+                        "loss": loss,
+                        "max_x_pos": max_x_pos,
+                    }
+                )
 
             if episode % self.config.save_checkpoint_every == 0 and episode > 0:
                 self.save_checkpoint(episode)

@@ -40,7 +40,7 @@ class TrainerConfig:
     learning_rate: float = 1e-4
     save_directory: str = "checkpoints"
     save_checkpoint_every: int = int(1e10)
-    n_episodes: int = int(1e2)
+    n_episodes: int = int(1e12)
     log_to_wandb: bool = True
     project: str = "Mario_RL"
     gamma: float = 0.95
